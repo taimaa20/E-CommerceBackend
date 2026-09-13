@@ -32,6 +32,15 @@ public interface IOnlineStoreCatalogService
         Guid productId,
         CancellationToken ct);
 
+    /// The given products, as the catalogue currently shows them. Ids that no longer resolve
+    /// are omitted — a caller holding a stale list gets a shorter one, never an error.
+    Task<OnlineStoreProductSetDto> GetProductSetAsync(
+        Guid tenantId,
+        Guid? branchId,
+        bool isArabic,
+        IReadOnlyCollection<Guid> productIds,
+        CancellationToken ct);
+
     /// Type-ahead suggestions for the storefront search box. Bounded on both sides.
     Task<OnlineStoreSuggestionsDto> GetSuggestionsAsync(
         Guid tenantId,

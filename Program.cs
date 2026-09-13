@@ -81,6 +81,8 @@ builder.Services.AddScoped<IOnlineShoppingCheckoutService, OnlineShoppingCheckou
 builder.Services.AddScoped<IStorefrontOfferService, StorefrontOfferService>();
 builder.Services.AddScoped<IStorefrontBannerService, StorefrontBannerService>();
 builder.Services.AddScoped<IProductBrandService, ProductBrandService>();
+builder.Services.AddScoped<ICurrencyService, CurrencyService>();
+builder.Services.AddScoped<IWhatsAppContactService, WhatsAppContactService>();
 builder.Services.AddScoped<ICustomerManagementService, CustomerManagementService>();
 builder.Services.AddScoped<IDiscountGroupService, DiscountGroupService>();
 builder.Services.AddScoped<IMenuService, MenuService>();
@@ -184,6 +186,8 @@ builder.Services.AddScoped<RestaurantPos.Api.Repositories.IOnlineShoppingReposit
 builder.Services.AddScoped<RestaurantPos.Api.Repositories.IStorefrontCatalogRepository, RestaurantPos.Api.Repositories.StorefrontCatalogRepository>();
 builder.Services.AddScoped<RestaurantPos.Api.Repositories.IStorefrontBannerRepository, RestaurantPos.Api.Repositories.StorefrontBannerRepository>();
 builder.Services.AddScoped<RestaurantPos.Api.Repositories.IProductBrandRepository, RestaurantPos.Api.Repositories.ProductBrandRepository>();
+builder.Services.AddScoped<RestaurantPos.Api.Repositories.ICurrencyRepository, RestaurantPos.Api.Repositories.CurrencyRepository>();
+builder.Services.AddScoped<RestaurantPos.Api.Repositories.IWhatsAppContactRepository, RestaurantPos.Api.Repositories.WhatsAppContactRepository>();
 builder.Services.AddScoped<RestaurantPos.Api.Repositories.ISettingsRepository, RestaurantPos.Api.Repositories.SettingsRepository>();
 builder.Services.AddScoped<RestaurantPos.Api.Repositories.IFollowUsClickRepository, RestaurantPos.Api.Repositories.FollowUsClickRepository>();
 builder.Services.AddScoped<RestaurantPos.Api.Repositories.IDeliveryPartnerRepository, RestaurantPos.Api.Repositories.DeliveryPartnerRepository>();

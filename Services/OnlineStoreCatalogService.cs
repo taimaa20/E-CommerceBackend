@@ -147,6 +147,35 @@ public sealed class OnlineStoreCatalogService : IOnlineStoreCatalogService
         };
     }
 
+    public async Task<OnlineStoreProductSetDto> GetProductSetAsync(
+        Guid tenantId,
+        Guid? branchId,
+        bool isArabic,
+        IReadOnlyCollection<Guid> productIds,
+        CancellationToken ct)
+    {
+        if (productIds.Count == 0) return new OnlineStoreProductSetDto();
+
+        var store = await LoadStoreAsync(tenantId, branchId, isArabic, ct);
+        var wanted = productIds.ToHashSet();
+        // Ordered by the caller's own list, so a favourites page keeps the order the shopper
+        // built. Unknown ids fall out here — that is the "product was removed" case, and it
+        // costs the caller a shorter list rather than a failed page.
+        var byId = store.Products.Where(product => wanted.Contains(product.Id)).ToDictionary(product => product.Id);
+        var products = productIds
+            .Distinct()
+            .Select(id => byId.GetValueOrDefault(id))
+            .OfType<ProductDto>()
+            .ToList();
+
+        return new OnlineStoreProductSetDto
+        {
+            Products = products,
+            ProductAvailability = store.AvailabilityFor(products),
+            ProductDetails = await BuildDetailsAsync(tenantId, products, ct),
+        };
+    }
+
     public async Task<OnlineStoreSuggestionsDto> GetSuggestionsAsync(
         Guid tenantId,
         Guid? branchId,

@@ -237,6 +237,19 @@ public sealed class OnlineStoreProductPageDto
     public IReadOnlyList<OnlineStoreProductDetailsDto> RelatedDetails { get; init; } = [];
 }
 
+/// An explicitly requested set of products, in the same shape the catalogue page returns.
+///
+/// Used by surfaces that already hold product ids and need the current catalogue truth for
+/// them — the storefront's device-local favourites list is the first. Ids that no longer
+/// resolve (removed, deactivated, not sellable in this branch) are simply absent from the
+/// response rather than reported as an error, so a stale list degrades to a shorter one.
+public sealed class OnlineStoreProductSetDto
+{
+    public IReadOnlyList<ProductDto> Products { get; init; } = [];
+    public IReadOnlyList<OnlineShoppingProductAvailabilityDto> ProductAvailability { get; init; } = [];
+    public IReadOnlyList<OnlineStoreProductDetailsDto> ProductDetails { get; init; } = [];
+}
+
 /// Slim row for the search suggestion panel — enough to recognise a product, nothing more.
 public sealed class OnlineStoreSuggestionDto
 {

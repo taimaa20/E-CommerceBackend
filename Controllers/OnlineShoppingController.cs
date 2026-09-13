@@ -18,6 +18,8 @@ public sealed class OnlineShoppingController : ControllerBase
     private const int DefaultStorePageSize = 12;
     private const int MaxStorePageSize = 48;
     private const int MaxSearchLength = 100;
+    /// A favourites list is a shopper's own shortlist, not a bulk export route.
+    private const int MaxProductSetIds = 200;
 
     private readonly IOnlineShoppingService _service;
     private readonly IOnlineStoreCatalogService _catalogService;
@@ -25,6 +27,7 @@ public sealed class OnlineShoppingController : ControllerBase
     private readonly IStorefrontOfferService _offerService;
     private readonly IStorefrontBannerService _bannerService;
     private readonly IPublicReceiptService _receiptService;
+    private readonly IWhatsAppContactService _whatsAppContactService;
     private readonly ITenantResolver _tenantResolver;
     private readonly ICurrentBranchProvider _branchProvider;
 
@@ -35,6 +38,7 @@ public sealed class OnlineShoppingController : ControllerBase
         IStorefrontOfferService offerService,
         IStorefrontBannerService bannerService,
         IPublicReceiptService receiptService,
+        IWhatsAppContactService whatsAppContactService,
         ITenantResolver tenantResolver,
         ICurrentBranchProvider branchProvider)
     {
@@ -44,6 +48,7 @@ public sealed class OnlineShoppingController : ControllerBase
         _offerService = offerService ?? throw new ArgumentNullException(nameof(offerService));
         _bannerService = bannerService ?? throw new ArgumentNullException(nameof(bannerService));
         _receiptService = receiptService ?? throw new ArgumentNullException(nameof(receiptService));
+        _whatsAppContactService = whatsAppContactService ?? throw new ArgumentNullException(nameof(whatsAppContactService));
         _tenantResolver = tenantResolver ?? throw new ArgumentNullException(nameof(tenantResolver));
         _branchProvider = branchProvider ?? throw new ArgumentNullException(nameof(branchProvider));
     }
@@ -99,6 +104,32 @@ public sealed class OnlineShoppingController : ControllerBase
             _branchProvider.GetSelectedBranchId(),
             GeneralHelper.IsArabicRequested(Request),
             ct));
+
+    /// The catalogue rows for an explicit set of product ids. The storefront's favourites are
+    /// held on the shopper's own device as ids only, so price, stock and imagery still come
+    /// from here — a favourite can never show a price the catalogue no longer charges.
+    [HttpGet("catalog/products")]
+    [ProducesResponseType(typeof(OnlineStoreProductSetDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetProductSet([FromQuery] string? ids, CancellationToken ct)
+    {
+        var productIds = ParseProductIds(ids);
+        if (productIds.Count > MaxProductSetIds)
+            return BadRequest(new { message = $"At most {MaxProductSetIds} products can be requested at once." });
+
+        return Ok(await _catalogService.GetProductSetAsync(
+            _tenantResolver.GetTenantId(),
+            _branchProvider.GetSelectedBranchId(),
+            GeneralHelper.IsArabicRequested(Request),
+            productIds,
+            ct));
+    }
+
+    /// WhatsApp destinations the business configured for the storefront, one per purpose. An
+    /// empty list is the normal "no WhatsApp configured" answer, and the store shows no action.
+    [HttpGet("whatsapp-contacts")]
+    [ProducesResponseType(typeof(IReadOnlyList<WhatsAppContactPublicDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetWhatsAppContacts(CancellationToken ct)
+        => Ok(await _whatsAppContactService.GetPublicAsync(_tenantResolver.GetTenantId(), ct));
 
     [HttpGet("catalog/products/{productId:guid}")]
     [ProducesResponseType(typeof(OnlineStoreProductPageDto), StatusCodes.Status200OK)]
@@ -203,4 +234,14 @@ public sealed class OnlineShoppingController : ControllerBase
             ReceiptUrl = $"/receipt/public/{Uri.EscapeDataString(receiptToken)}"
         });
     }
+
+    /// Comma-separated ids from the query string. Anything unparseable is dropped rather than
+    /// rejected — a hand-edited or outdated local list must degrade, not break the page.
+    private static IReadOnlyCollection<Guid> ParseProductIds(string? ids)
+        => (ids ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => Guid.TryParse(value, out var id) ? id : (Guid?)null)
+            .OfType<Guid>()
+            .Distinct()
+            .ToList();
 }

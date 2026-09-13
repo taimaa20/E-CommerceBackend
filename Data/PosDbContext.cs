@@ -114,6 +114,13 @@ namespace RestaurantPos.Api.Data
         public DbSet<StorefrontBanner> StorefrontBanners { get; set; }
         public DbSet<ProductBrand> ProductBrands { get; set; }
 
+        // Small configuration lookups. Neither is referenced by a foreign key: Currencies says
+        // which codes may be OFFERED for selection (money itself stays a plain decimal plus the
+        // code on SystemSettings), and WhatsAppContacts holds the storefront's contact
+        // destinations and their message templates.
+        public DbSet<Currency> Currencies { get; set; }
+        public DbSet<WhatsAppContact> WhatsAppContacts { get; set; }
+
         // Multi-warehouse inventory
         public DbSet<Warehouse> Warehouses { get; set; }
         public DbSet<RawMaterialInventory> RawMaterialInventories { get; set; }
@@ -2493,6 +2500,25 @@ namespace RestaurantPos.Api.Data
                     .HasDatabaseName("IX_ProductBrands_Tenant_Active_Sort");
             });
 
+            // ── Currency lookup (selection metadata only — no FK, no amounts) ────
+            modelBuilder.Entity<Currency>(b =>
+            {
+                b.HasIndex(x => new { x.TenantId, x.Code })
+                    .IsUnique()
+                    .HasFilter("\"DeletedAt\" IS NULL")
+                    .HasDatabaseName("IX_Currencies_Tenant_Code");
+
+                b.HasIndex(x => new { x.TenantId, x.IsActive, x.SortOrder })
+                    .HasDatabaseName("IX_Currencies_Tenant_Active_Sort");
+            });
+
+            // ── WhatsApp destinations for the storefront ──────────────────────────
+            modelBuilder.Entity<WhatsAppContact>(b =>
+            {
+                b.HasIndex(x => new { x.TenantId, x.Purpose, x.IsActive, x.SortOrder })
+                    .HasDatabaseName("IX_WhatsAppContacts_Tenant_Purpose_Active_Sort");
+            });
+
             // ── Multi-warehouse inventory ─────────────────────────────────────────
             modelBuilder.Entity<Warehouse>(b =>
             {
@@ -2564,6 +2590,9 @@ namespace RestaurantPos.Api.Data
             modelBuilder.Entity<Branch>().HasData(SeedData.DefaultBranches);
             modelBuilder.Entity<User>().HasData(SeedData.DefaultUsers);
             modelBuilder.Entity<PaymentMethod>().HasData(SeedData.DefaultPaymentMethods);
+            // The exact set the back office could already choose from before this lookup
+            // existed, so nothing the business can select today stops being selectable.
+            modelBuilder.Entity<Currency>().HasData(SeedData.DefaultCurrencies);
 
             // ── Seed default CancelReasons (global — TenantId = null) ─────────────
             modelBuilder.Entity<CancelReason>().HasData(

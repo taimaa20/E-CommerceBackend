@@ -16,6 +16,27 @@ namespace RestaurantPos.Api.Data
         public const string DefaultPasswordHash = "e86f78a8a3caf0b60d8e74e5942aa6d86dc150cd3c03338aef25b7d2d7e3acc7";
         private static readonly DateTime SeedTimestamp = new(2026, 5, 5, 13, 7, 57, 883, DateTimeKind.Utc);
 
+        /// <summary>
+        /// The currency lookup's starting rows.
+        ///
+        /// Deliberately the exact set the back office could already pick from before this table
+        /// existed, all active — so introducing the lookup changes nothing a business can select
+        /// today, and QAR and USD are both present from the first deploy. Fixed ids keep the
+        /// seed idempotent: EF inserts each row once and leaves it alone on every later
+        /// migration, so repeated deploys cannot duplicate QAR or USD.
+        ///
+        /// Nothing here declares a base currency. The currency the business operates in stays
+        /// <see cref="Models.SystemSettings.Currency"/> and is untouched by this seed.
+        /// </summary>
+        public static Currency[] DefaultCurrencies =>
+        [
+            CreateCurrency("b0e7b8c2-5f1a-4d3e-9c71-0a1c5f8e2101", "JOD", "Jordanian Dinar", "دينار أردني", "د.ا", 1),
+            CreateCurrency("b0e7b8c2-5f1a-4d3e-9c71-0a1c5f8e2102", "USD", "US Dollar",       "دولار أمريكي", "$",   2),
+            CreateCurrency("b0e7b8c2-5f1a-4d3e-9c71-0a1c5f8e2103", "QAR", "Qatari Riyal",    "ريال قطري",    "ر.ق", 3),
+            CreateCurrency("b0e7b8c2-5f1a-4d3e-9c71-0a1c5f8e2104", "SAR", "Saudi Riyal",     "ريال سعودي",   "ر.س", 4),
+            CreateCurrency("b0e7b8c2-5f1a-4d3e-9c71-0a1c5f8e2105", "EGP", "Egyptian Pound",  "جنيه مصري",    "£",   5)
+        ];
+
         public static PaymentMethod[] DefaultPaymentMethods =>
         [
             CreatePaymentMethod("1ab8e74c-9912-42fa-9c1d-56d6f8f2d501", "Cash", "نقدي", "CASH", 1, true),
@@ -99,6 +120,29 @@ namespace RestaurantPos.Api.Data
                 UpdatedAt = SeedTimestamp.AddTicks(5005)
             }
         ];
+
+        private static Currency CreateCurrency(
+            string id,
+            string code,
+            string name,
+            string nameAr,
+            string symbol,
+            int sortOrder)
+        {
+            return new Currency
+            {
+                Id = Guid.Parse(id),
+                TenantId = DefaultTenantId,
+                Code = code,
+                Name = name,
+                NameAr = nameAr,
+                Symbol = symbol,
+                IsActive = true,
+                SortOrder = sortOrder,
+                CreatedAt = SeedTimestamp,
+                UpdatedAt = SeedTimestamp
+            };
+        }
 
         private static PaymentMethod CreatePaymentMethod(
             string id,
